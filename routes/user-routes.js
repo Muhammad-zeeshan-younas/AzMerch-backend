@@ -4,7 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const dashboard_controller_1 = __importDefault(require("../controller/dashboard-controller"));
+const user_controller_1 = __importDefault(require("../controller/user-controller"));
 const router = express_1.default.Router();
-router.get("/", dashboard_controller_1.default.getDashboard);
+router.post("/new-session", user_controller_1.default.Signin);
+router.post("/registration", user_controller_1.default.Signup);
 exports.default = router;
