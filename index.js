@@ -10,9 +10,7 @@ const http_error_1 = __importDefault(require("./error/http-error"));
 const cors_1 = __importDefault(require("cors"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const app = (0, express_1.default)();
-dotenv_1.default.config();
 const port = process.env.PORT || 3001;
 const url = `mongodb+srv://muhammadzeeshanyounas777:p7tXnsuChMI6Lu5G@cluster0.nrs5ttn.mongodb.net/`;
 const corsOptions = {
@@ -42,6 +40,4 @@ mongoose_1.default
     .then(() => {
     app.listen(port);
 })
-    .catch((err) => {
-    console.log(err);
-});
+    .catch((err) => { });

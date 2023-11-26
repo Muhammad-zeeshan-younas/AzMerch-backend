@@ -3,6 +3,7 @@ import User from "../model/user";
 import HttpError from "../error/http-error";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import fs from "fs/promises";
 
 const Signin = async (
   request: Request,
@@ -34,7 +35,7 @@ const Signin = async (
       );
       return next(error);
     }
-    console.log(process.env.ACCESS_TOKEN_SECRET_KEY);
+
     const token = jwt.sign(
       { userId: existingUser.id, email: existingUser.email },
       process.env.ACCESS_TOKEN_SECRET_KEY || "",
@@ -43,14 +44,10 @@ const Signin = async (
 
     response.setHeader("Authorization", `Bearer ${token}`);
 
-    response.json({
-      user: {
-        id: existingUser._id,
-        email: existingUser.email,
-        username: existingUser.username,
-        avatar: existingUser.avatar,
-      },
+    const { password, ...userWithoutPassword } = existingUser.toObject({
+      getters: true,
     });
+    return response.json({ user: userWithoutPassword });
   } catch (error) {
     const errorResponse = new HttpError(
       "Logging in failed, please try again later.",
@@ -83,14 +80,29 @@ const Signup = async (
       password: hashedPassword,
     });
 
+    // Check if an avatar file was uploaded
+    if (request.file) {
+      newUser.avatar = request.file.path;
+    }
+
     await newUser.save();
 
-    response.status(201).json({ message: "Signup successful" });
+    response.status(201).json({ user: newUser.toObject({ getters: true }) });
   } catch (err) {
     const errorResponse = new HttpError(
       "Could not sign you up, please try again later",
       500
     );
+
+    // Delete the uploaded file if it exists
+    if (request.file && request.file.path) {
+      try {
+        await fs.unlink(request.file.path);
+      } catch (unlinkError) {
+        console.error("Error deleting file:", unlinkError);
+      }
+    }
+
     return next(errorResponse);
   }
 };

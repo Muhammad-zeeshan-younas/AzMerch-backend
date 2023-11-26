@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 import { AuthenticateToken } from "./middleware/authenticate";
 
 const app = express();
-dotenv.config();
+
 const port = process.env.PORT || 3001;
 const url = `mongodb+srv://muhammadzeeshanyounas777:p7tXnsuChMI6Lu5G@cluster0.nrs5ttn.mongodb.net/`;
 const corsOptions = {
@@ -43,6 +43,4 @@ mongoose
   .then(() => {
     app.listen(port);
   })
-  .catch((err) => {
-    console.log(err);
-  });
+  .catch((err) => {});

@@ -8,6 +8,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -16,6 +27,7 @@ const user_1 = __importDefault(require("../model/user"));
 const http_error_1 = __importDefault(require("../error/http-error"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const promises_1 = __importDefault(require("fs/promises"));
 const Signin = (request, response, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email = "", password: reqBodyPassword = "" } = request.body;
     try {
@@ -29,17 +41,12 @@ const Signin = (request, response, next) => __awaiter(void 0, void 0, void 0, fu
             const error = new http_error_1.default("Invalid credentials, could not log you in.", 401);
             return next(error);
         }
-        console.log(process.env.ACCESS_TOKEN_SECRET_KEY);
         const token = jsonwebtoken_1.default.sign({ userId: existingUser.id, email: existingUser.email }, process.env.ACCESS_TOKEN_SECRET_KEY || "", { expiresIn: "1h" });
         response.setHeader("Authorization", `Bearer ${token}`);
-        response.json({
-            user: {
-                id: existingUser._id,
-                email: existingUser.email,
-                username: existingUser.username,
-                avatar: existingUser.avatar,
-            },
-        });
+        const _a = existingUser.toObject({
+            getters: true,
+        }), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
+        return response.json({ user: userWithoutPassword });
     }
     catch (error) {
         const errorResponse = new http_error_1.default("Logging in failed, please try again later.", 500);
@@ -60,11 +67,24 @@ const Signup = (request, response, next) => __awaiter(void 0, void 0, void 0, fu
             email,
             password: hashedPassword,
         });
+        // Check if an avatar file was uploaded
+        if (request.file) {
+            newUser.avatar = request.file.path;
+        }
         yield newUser.save();
-        response.status(201).json({ message: "Signup successful" });
+        response.status(201).json({ user: newUser.toObject({ getters: true }) });
     }
     catch (err) {
         const errorResponse = new http_error_1.default("Could not sign you up, please try again later", 500);
+        // Delete the uploaded file if it exists
+        if (request.file && request.file.path) {
+            try {
+                yield promises_1.default.unlink(request.file.path);
+            }
+            catch (unlinkError) {
+                console.error("Error deleting file:", unlinkError);
+            }
+        }
         return next(errorResponse);
     }
 });
