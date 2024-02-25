@@ -10,7 +10,7 @@ const MIME_TYPE_MAP: Record<string, string> = {
 
 const fileUpload: Multer = multer({
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB file size limit
+    fileSize: 6000000000000000,
   },
   storage: multer.diskStorage({
     destination: (

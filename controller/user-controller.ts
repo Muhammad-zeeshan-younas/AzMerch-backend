@@ -4,6 +4,26 @@ import HttpError from "../error/http-error";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import fs from "fs/promises";
+const secretKey = process.env.ACCESS_TOKEN_SECRET_KEY;
+
+const getUser = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
+  const token = request.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    return response.status(401).json({ error: "Token missing" });
+  }
+  try {
+    const decoded = jwt.verify(token, secretKey || "dummy");
+    // @ts-ignore
+    response.status(200).json(decoded.user);
+  } catch (error) {
+    return response.status(401).json({ error: "Invalid token" });
+  }
+};
 
 const Signin = async (
   request: Request,
@@ -36,17 +56,18 @@ const Signin = async (
       return next(error);
     }
 
+    const { password, ...userWithoutPassword } = existingUser.toObject({
+      getters: true,
+    });
+
     const token = jwt.sign(
-      { userId: existingUser.id, email: existingUser.email },
-      process.env.ACCESS_TOKEN_SECRET_KEY || "",
+      { user: userWithoutPassword },
+      secretKey || "dummy",
       { expiresIn: "1h" }
     );
 
     response.setHeader("Authorization", `Bearer ${token}`);
 
-    const { password, ...userWithoutPassword } = existingUser.toObject({
-      getters: true,
-    });
     return response.json({ user: userWithoutPassword });
   } catch (error) {
     const errorResponse = new HttpError(
@@ -80,7 +101,8 @@ const Signup = async (
       password: hashedPassword,
     });
 
-    // Check if an avatar file was uploaded
+    console.log(request.file);
+
     if (request.file) {
       newUser.avatar = request.file.path;
     }
@@ -107,9 +129,31 @@ const Signup = async (
   }
 };
 
+const Signout = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
+  try {
+    // Clear the token from the client-side
+    response.setHeader("Authorization", "");
+
+    // Respond with a success message
+    return response.status(200).json({ message: "Signout successful" });
+  } catch (error) {
+    const errorResponse = new HttpError(
+      "Signout failed, please try again later.",
+      500
+    );
+    return next(errorResponse);
+  }
+};
+
 const UserController = {
   Signin,
   Signup,
+  getUser,
+  Signout,
 };
 
 export default UserController;

@@ -14,7 +14,12 @@ export const AuthenticateToken = (
       throw new HttpError("Authentication failed.", 401);
     }
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET_KEY || "");
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET_KEY || ""
+    );
+
+    // Attach the decoded user information to the request object
   } catch (err: any) {
     const error = new HttpError(
       err.message || "Authentication failed!",

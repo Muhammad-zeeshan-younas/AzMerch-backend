@@ -5,6 +5,8 @@ import fileUpload from "../middleware/fileUpload";
 
 const router = express.Router();
 
+router.get("/session", UserController.getUser);
+
 router.post(
   "/new-session",
   [
@@ -14,6 +16,8 @@ router.post(
   ],
   UserController.Signin
 );
+
+router.delete("/delete-session", UserController.Signout);
 
 router.post(
   "/registration",

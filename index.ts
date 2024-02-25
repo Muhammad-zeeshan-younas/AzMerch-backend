@@ -5,6 +5,7 @@ import HttpError from "./error/http-error";
 import cors from "cors";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
+import path from "path";
 import dotenv from "dotenv";
 import { AuthenticateToken } from "./middleware/authenticate";
 
@@ -20,8 +21,12 @@ const corsOptions = {
   exposedHeaders: ["Authorization"],
 };
 
+dotenv.config();
+
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
+app.use("/api/uploads/images", express.static(path.join("uploads", "images")));
+
 app.use("/api/user", userRoutes);
 app.use("/", dashboardRoutes);
 
@@ -43,4 +48,6 @@ mongoose
   .then(() => {
     app.listen(port);
   })
-  .catch((err) => {});
+  .catch((err) => {
+    console.log(err);
+  });

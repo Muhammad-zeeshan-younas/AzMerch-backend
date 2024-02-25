@@ -13,7 +13,8 @@ const AuthenticateToken = (request, response, next) => {
         if (!token) {
             throw new http_error_1.default("Authentication failed.", 401);
         }
-        jsonwebtoken_1.default.verify(token, process.env.ACCESS_TOKEN_SECRET_KEY || "");
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.ACCESS_TOKEN_SECRET_KEY || "");
+        // Attach the decoded user information to the request object
     }
     catch (err) {
         const error = new http_error_1.default(err.message || "Authentication failed!", err.code || 401);

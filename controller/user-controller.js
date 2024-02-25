@@ -28,6 +28,22 @@ const http_error_1 = __importDefault(require("../error/http-error"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const promises_1 = __importDefault(require("fs/promises"));
+const secretKey = process.env.ACCESS_TOKEN_SECRET_KEY;
+const getUser = (request, response, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const token = (_a = request.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(" ")[1];
+    if (!token) {
+        return response.status(401).json({ error: "Token missing" });
+    }
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, secretKey || "dummy");
+        // @ts-ignore
+        response.status(200).json(decoded.user);
+    }
+    catch (error) {
+        return response.status(401).json({ error: "Invalid token" });
+    }
+});
 const Signin = (request, response, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email = "", password: reqBodyPassword = "" } = request.body;
     try {
@@ -41,11 +57,11 @@ const Signin = (request, response, next) => __awaiter(void 0, void 0, void 0, fu
             const error = new http_error_1.default("Invalid credentials, could not log you in.", 401);
             return next(error);
         }
-        const token = jsonwebtoken_1.default.sign({ userId: existingUser.id, email: existingUser.email }, process.env.ACCESS_TOKEN_SECRET_KEY || "", { expiresIn: "1h" });
-        response.setHeader("Authorization", `Bearer ${token}`);
-        const _a = existingUser.toObject({
+        const _b = existingUser.toObject({
             getters: true,
-        }), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
+        }), { password } = _b, userWithoutPassword = __rest(_b, ["password"]);
+        const token = jsonwebtoken_1.default.sign({ user: userWithoutPassword }, secretKey || "dummy", { expiresIn: "1h" });
+        response.setHeader("Authorization", `Bearer ${token}`);
         return response.json({ user: userWithoutPassword });
     }
     catch (error) {
@@ -67,7 +83,7 @@ const Signup = (request, response, next) => __awaiter(void 0, void 0, void 0, fu
             email,
             password: hashedPassword,
         });
-        // Check if an avatar file was uploaded
+        console.log(request.file);
         if (request.file) {
             newUser.avatar = request.file.path;
         }
@@ -88,8 +104,22 @@ const Signup = (request, response, next) => __awaiter(void 0, void 0, void 0, fu
         return next(errorResponse);
     }
 });
+const Signout = (request, response, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Clear the token from the client-side
+        response.setHeader("Authorization", "");
+        // Respond with a success message
+        return response.status(200).json({ message: "Signout successful" });
+    }
+    catch (error) {
+        const errorResponse = new http_error_1.default("Signout failed, please try again later.", 500);
+        return next(errorResponse);
+    }
+});
 const UserController = {
     Signin,
     Signup,
+    getUser,
+    Signout,
 };
 exports.default = UserController;
